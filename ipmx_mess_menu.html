@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --saffron: #E8671A;
+    --turmeric: #F5A623;
+    --cream: #FFF8F0;
+    --deep: #2C1A0E;
+    --muted: #7A5C45;
+    --card-bg: #FFFFFF;
+    --green: #3A7D44;
+    --light-border: #F0E0CC;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Nunito', sans-serif; background: var(--cream); color: var(--deep); }
+  .header {
+    background: linear-gradient(135deg, var(--saffron) 0%, var(--turmeric) 100%);
+    padding: 18px 16px 14px; text-align: center; position: relative; overflow: hidden;
+  }
+  .header::before { content:''; position:absolute; top:-30px; right:-30px; width:120px; height:120px; background:rgba(255,255,255,0.1); border-radius:50%; }
+  .header-title { font-family:'Playfair Display',serif; font-size:1.4rem; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .header-sub { font-size:0.7rem; color:rgba(255,255,255,0.85); margin-top:2px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; }
+  .today-badge { display:inline-block; background:rgba(255,255,255,0.25); color:#fff; font-size:0.68rem; font-weight:700; padding:3px 10px; border-radius:20px; margin-top:5px; border:1px solid rgba(255,255,255,0.4); }
+  .day-tabs { display:flex; overflow-x:auto; gap:6px; padding:10px 12px; background:#fff; border-bottom:1px solid var(--light-border); scrollbar-width:none; position:sticky; top:0; z-index:10; box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+  .day-tabs::-webkit-scrollbar { display:none; }
+  .day-tab { flex-shrink:0; padding:6px 13px; border-radius:20px; font-size:0.78rem; font-weight:600; cursor:pointer; border:1.5px solid var(--light-border); background:var(--cream); color:var(--muted); transition:all 0.2s; font-family:'Nunito',sans-serif; }
+  .day-tab.active { background:var(--saffron); color:#fff; border-color:var(--saffron); box-shadow:0 3px 10px rgba(232,103,26,0.35); }
+  .day-tab.today-tab { border-color:var(--turmeric); color:var(--saffron); }
+  .day-tab.today-tab.active { background:var(--saffron); color:#fff; }
+  .content { padding:14px 12px 30px; max-width:480px; margin:0 auto; }
+  .day-panel { display:none; animation:fadeIn 0.3s ease; }
+  .day-panel.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .meal-card { background:#fff; border-radius:14px; margin-bottom:12px; overflow:hidden; box-shadow:0 2px 12px rgba(44,26,14,0.07); border:1px solid var(--light-border); }
+  .meal-header { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--light-border); }
+  .meal-icon { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; }
+  .breakfast .meal-icon { background:#FFF3E0; }
+  .lunch .meal-icon { background:#E8F5E9; }
+  .dinner .meal-icon { background:#EDE7F6; }
+  .snacks .meal-icon { background:#FCE4EC; }
+  .meal-title { font-family:'Playfair Display',serif; font-size:0.95rem; font-weight:600; color:var(--deep); }
+  .meal-time { font-size:0.67rem; color:var(--muted); font-weight:500; }
+  .meal-items { padding:9px 14px 12px; display:flex; flex-wrap:wrap; gap:5px; }
+  .item-chip { background:var(--cream); border:1px solid var(--light-border); border-radius:20px; padding:4px 10px; font-size:0.72rem; font-weight:600; color:var(--deep); }
+  .breakfast .item-chip { border-left:3px solid var(--turmeric); }
+  .lunch .item-chip { border-left:3px solid var(--green); }
+  .dinner .item-chip { border-left:3px solid #7C4DFF; }
+  .snacks .item-chip { border-left:3px solid #E91E63; }
+  .note-bar { background:#FFF3E0; border:1px solid #FFD49E; border-radius:10px; padding:9px 13px; font-size:0.71rem; color:var(--muted); margin-top:2px; display:flex; gap:8px; align-items:flex-start; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title">🍽️ IPMX Mess Menu</div>
+  <div class="header-sub">IIM Lucknow · Weekly Schedule</div>
+  <div class="today-badge" id="todayBadge">Loading...</div>
+</div>
+<div class="day-tabs" id="dayTabs"></div>
+<div class="content" id="content"></div>
+<script>
+const menu = {
+  Monday:    { breakfast:["Poori","Aloo Tomato Ki Sabzi","Cornflakes with Milk","Bread Butter Jam","Omelette","Tea / Coffee","Fruits"], lunch:["Jeera Rice","Dal Makhini","Mix Vegetable","Aloo Badi","Boondi Raita","Sprouted Salad","Chapatti"], dinner:["Tomato Soup","Plain Rice","Moong Masur Dal","Lauki Ki Sabzi","Malai Kofta","Egg Curry","Curd","Green Salad","Chapatti"], snacks:["Bhel Puri"] },
+  Tuesday:   { breakfast:["Idli / Bada","Sambhar","Chutney","Dalia","Bread Butter Jam","Tea / Coffee","Fruits"], lunch:["Plain Rice","Mix Dal","Taroi Ki Sabzi","Jeera Aloo","Boondi Raita","Green Salad","Chapatti"], dinner:["Mix Veg Soup","Fried Rice","Veg Manchurian","Veg Noodles","Green Salad","Fruit Custard"], snacks:["Chana Chat"] },
+  Wednesday: { breakfast:["Stuffed Prantha","Curd","Cornflakes with Milk","Bread Butter Jam","Boiled Egg","Tea / Coffee","Fruits"], lunch:["Lemon Rice","Chole","Bhindi Masala","Gatta Curry","Mint Raita","Sprouted Salad","Chapatti"], dinner:["Palak Soup","Plain Rice","Moong Sabut Dal","Aloo Beans Matar","Paneer","Fish Curry / Mutton Curry","Green Salad","Chapatti"], snacks:["Semiya Upma"] },
+  Thursday:  { breakfast:["Uttapam","Sambhar","Chutney","Daliya","Bread Butter Jam","Omelette","Tea / Coffee","Fruits"], lunch:["Veg Pulao","Chana Dal","Baigan Bharta","Mix Veg Kofta","Mix Raita","Green Salad","Chapatti"], dinner:["Hot & Sour Soup","Plain Rice","Mix Dal","Lauki Chana","Paneer Butter Masala","Chicken Curry","Curd","Sprouted Salad","Chapatti"], snacks:["Poha"] },
+  Friday:    { breakfast:["Plain Paratha","Aloo Black Chana Ki Sabzi","Cornflakes with Milk","Bread Butter Jam","Egg Bhujia","Tea / Coffee","Fruits"], lunch:["Plain Rice","Kadhi Pakauda","Jeera Aloo","Palak Corn","Boondi Raita","Sprouted Salad","Chapatti"], dinner:["Tomato Shorba","Plain Rice","Panchratan Dal","Karela Bhujia","Soya Curry","Curd","Sprouted Salad","Chapatti"], snacks:["Sweet Corn"] },
+  Saturday:  { breakfast:["Dosa","Sambhar","Chutney","Bread Butter Jam","Dalia","Boiled Egg","Tea / Coffee","Fruits"], lunch:["Plain Rice","Raima Dal","Aloo Parwal","Kathal Ki Sabzi","Boondi Raita","Green Salad","Chapatti"], dinner:["Hot & Sour Soup","Lemon Rice","Mixed Dal Chhilka","Baigan Masala","Dum Aloo","Plain Curd","Green Salad","Chapatti","Semiya"], snacks:["Bread Pakauda"] },
+  Sunday:    { breakfast:["Suji Upma","Cornflakes with Milk","Bread Butter Jam","Tea / Coffee","Chole Bhature (Alt.)","Fruits"], lunch:["Plain Rice","Arhar Dal","Aloo Kundaru","Soyabean Curry","Plain Curd","Sprouted","Chapatti"], dinner:["Hot & Sour Soup","Lemon Rice","Mixed Dal","Baigan Masala","Dum Aloo","Plain Curd","Green Salad","Chapatti","Kheer"], snacks:["Bread Pakauda"] }
+};
+const meals = [
+  {key:'breakfast',label:'Breakfast',  icon:'🌅',time:'7:30 – 9:30 AM',  cls:'breakfast'},
+  {key:'lunch',    label:'Lunch',       icon:'☀️',time:'12:30 – 2:30 PM',cls:'lunch'},
+  {key:'snacks',   label:'Eve. Snacks', icon:'☕',time:'5:00 – 6:00 PM', cls:'snacks'},
+  {key:'dinner',   label:'Dinner',      icon:'🌙',time:'7:30 – 9:30 PM', cls:'dinner'},
+];
+const days = Object.keys(menu);
+const dayMap = {0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
+const todayName = dayMap[new Date().getDay()];
+document.getElementById('todayBadge').textContent = `Today: ${todayName}, ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`;
+const tabsEl = document.getElementById('dayTabs');
+days.forEach(day => {
+  const btn = document.createElement('button');
+  btn.className = 'day-tab' + (day===todayName?' today-tab':'');
+  btn.textContent = day.slice(0,3);
+  btn.dataset.day = day;
+  btn.onclick = () => selectDay(day);
+  tabsEl.appendChild(btn);
+});
+const contentEl = document.getElementById('content');
+days.forEach(day => {
+  const panel = document.createElement('div');
+  panel.className = 'day-panel';
+  panel.id = 'panel-' + day;
+  let html = '';
+  meals.forEach(m => {
+    const items = menu[day][m.key]||[];
+    html += `<div class="meal-card ${m.cls}"><div class="meal-header"><div class="meal-icon">${m.icon}</div><div><div class="meal-title">${m.label}</div><div class="meal-time">${m.time}</div></div></div><div class="meal-items">${items.map(i=>`<span class="item-chip">${i}</span>`).join('')}</div></div>`;
+  });
+  html += `<div class="note-bar"><span>📌</span><span>Vegetables may change according to season.</span></div>`;
+  panel.innerHTML = html;
+  contentEl.appendChild(panel);
+});
+function selectDay(day) {
+  document.querySelectorAll('.day-tab').forEach(t=>t.classList.toggle('active',t.dataset.day===day));
+  document.querySelectorAll('.day-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+day));
+  document.querySelector(`.day-tab[data-day="${day}"]`)?.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+}
+selectDay(todayName);
+</script>
+</body>
+</html>
